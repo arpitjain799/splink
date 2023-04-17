@@ -9,6 +9,7 @@ import logging
 from .comparison import Comparison  # change to self
 from .comparison_library_utils import datediff_error_logger
 from .misc import ensure_is_iterable
+from .input_column import InputColumn
 
 logger = logging.getLogger(__name__)
 
@@ -471,6 +472,138 @@ class NameComparisonBase(Comparison):
             comparison_desc += f"Names within jaccard threshold{plural} {lev_desc} vs. "
 
         comparison_desc += "anything else"
+
+        comparison_dict = {
+            "comparison_description": comparison_desc,
+            "comparison_levels": comparison_levels,
+        }
+        super().__init__(comparison_dict)
+
+
+class PostcodeComparisonBase(Comparison):
+    def __init__(
+        self,
+        col_name: str,
+        include_full_match_level=True,
+        include_sector_match_level=True,
+        include_district_match_level=True,
+        include_area_match_level=True,
+        term_frequency_adjustments_full=False,
+        # term_frequency_adjustments_sector=False,
+        # term_frequency_adjustments_district=False,
+        # term_frequency_adjustments_area=False,
+        m_probability_full_match=None,
+        m_probability_sector_match=None,
+        m_probability_district_match=None,
+        m_probability_area_match=None,
+        # m_probability_or_probabilities_sizes: Union[float, list] = None,
+        m_probability_else=None,
+    ) -> Comparison:
+        """A wrapper to generate a comparison for a poscode column 'col_name' with preselected defaults.
+
+        The default arguments will give a comparison with levels:\n
+        - Exact match on full postcode\n
+        - Exact match on sector\n
+        - Exact match on district\n
+        - Exact match on area\n
+        - All other comparisons
+
+        Args:
+            col_name (str): The name of the column to compare
+            include_full_match_level (bool, optional): If True, include an exact match
+                on full postcode level. Defaults to True.
+            include_sector_match_level (bool, optional): If True, include an exact match
+                on sector level. Defaults to True.
+            include_district_match_level (bool, optional): If True, include an exact match
+                on district level. Defaults to True.
+            include_area_match_level (bool, optional): If True, include an exact match
+                on area level. Defaults to True.
+            term_frequency_adjustments (bool, optional): If True, apply term frequency
+                adjustments to the full postcode exact match level. Defaults to False.
+            m_probability_full_match (_type_, optional): If provided, overrides
+                the default m probability for the full postcode exact match level for col_name.
+                Defaults to None.
+            m_probability_sector_match (_type_, optional): If provided, overrides
+                the default m probability for the sector exact match level for col_name.
+                Defaults to None.
+            m_probability_district_match (_type_, optional): If provided, overrides
+                the default m probability for the district exact match level for col_name.
+                Defaults to None.
+            m_probability_area_match (_type_, optional): If provided, overrides
+                the default m probability for the area exact match level for col_name.
+                Defaults to None.
+            m_probability_else (_type_, optional): If provided, overrides the
+                default m probability for the 'anything else' level. Defaults to None.
+
+        Returns:
+            Comparison: A comparison that can be inclued in the Splink settings
+                dictionary.
+        """
+
+        postcode_col = InputColumn(col_name, sql_dialect=self._sql_dialect)
+        postcode_col_l, postcode_col_r = postcode_col.names_l_r()
+
+        comparison_levels = []
+        comparison_levels.append(self._null_level(col_name))
+
+        if include_full_match_level:
+            comparison_level = self._exact_match_level(
+                col_name,
+                term_frequency_adjustments=term_frequency_adjustments_full,
+                m_probability=m_probability_full_match,
+                include_colname_in_charts_label=True,
+            )
+            comparison_levels.append(comparison_level)
+
+        if include_sector_match_level:
+            comparison_level = {
+                "sql_condition": f"regexp_extract({postcode_col_l}, '^[A-Z]{1,2}\d[A-Z\d]?\s\d') = regexp_extract({postcode_col_r}, '^[A-Z]{1,2}\d[A-Z\d]?\s\d')",
+                # "tf_adjustment_column": term_frequency_adjustments_sector,
+                # "tf_adjustment_weight": 1.0,
+                "m_probability": m_probability_sector_match,
+                "label_for_charts": "Sector match",
+            }
+            comparison_levels.append(comparison_level)
+
+        if include_district_match_level:
+            comparison_level = {
+                "sql_condition": f"regexp_extract({postcode_col_l}, '^[A-Z]{1,2}\d[A-Z\d]?') = regexp_extract({postcode_col_r}, '^[A-Z]{1,2}\d[A-Z\d]?')",
+                # "tf_adjustment_column": term_frequency_adjustments_sector,
+                # "tf_adjustment_weight": 1.0,
+                "m_probability": m_probability_district_match,
+                "label_for_charts": "District match",
+            }
+            comparison_levels.append(comparison_level)
+
+        if include_area_match_level:
+            comparison_level = {
+                "sql_condition": f"regexp_extract({postcode_col_l}, '^[A-Z]{1,2}') = regexp_extract({postcode_col_r}, '^[A-Z]{1,2}')",
+                # "tf_adjustment_column": term_frequency_adjustments_sector,
+                # "tf_adjustment_weight": 1.0,
+                "m_probability": m_probability_area_match,
+                "label_for_charts": "Area match",
+            }
+            comparison_levels.append(comparison_level)
+
+        comparison_levels.append(
+            self._else_level(m_probability=m_probability_else),
+        )
+
+        # Construct Description
+        comparison_desc = ""
+        if include_full_match_level:
+            comparison_desc += "Exact match on full postcode vs. "
+
+        if include_sector_match_level:
+            comparison_desc += "exact match on sector vs. "
+
+        if include_district_match_level:
+            comparison_desc += "exact match on district vs. "
+
+        if include_area_match_level:
+            comparison_desc += "exact match on area vs. "
+
+        comparison_desc += "all other comparisons"
 
         comparison_dict = {
             "comparison_description": comparison_desc,
