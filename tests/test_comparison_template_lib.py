@@ -281,3 +281,89 @@ def test_name_comparison_levels(spark, ctl, Linker):
                 ]["gamma_custom_first_name_first_name_metaphone"].values[0]
                 == gamma
             )
+
+
+# postcode_comparison
+
+
+def test_postcode_comparison_levels(spark, ctl, Linker):
+    df = pd.DataFrame(
+        [
+            {
+                "unique_id": 1,
+                "first_name": "Andy",
+                "postcode": "SE1P 0NY",
+            },
+            {
+                "unique_id": 2,
+                "first_name": "Andy's twin",
+                "postcode": "SE1P 0NY",
+            },
+            {
+                "unique_id": 3,
+                "first_name": "Tom",
+                "postcode": "SE1P 0PZ",
+            },
+            {
+                "unique_id": 4,
+                "first_name": "Robin",
+                "postcode": "SE1P 4UY",
+            },
+            {
+                "unique_id": 5,
+                "first_name": "Sam",
+                "postcode": "SE2 7TR",
+            },
+            {
+                "unique_id": 6,
+                "first_name": "Zoe",
+                "postcode": "SW15 8UY",
+            },
+            # {
+            #     "unique_id": 7,
+            #     "first_name": "Ross",
+            #     "postcode": "",
+            # },
+        ]
+    )
+
+    # Generate our various settings objs
+    settings = {
+        "link_type": "dedupe_only",
+        "comparisons": [ctl.postcode_comparison("postcode")],
+    }
+
+    if Linker == SparkLinker:
+        df = spark.createDataFrame(df)
+        df.persist()
+    linker = Linker(df, settings)
+    linker_output = linker.predict().as_pandas_dataframe()
+
+    # Dict key: {gamma_level value: size}
+    size_gamma_lookup = {0: 5, 1: 4, 2: 3, 3: 2, 4: 1}
+
+    # Check gamma sizes are as expected
+    for gamma, expected_size in size_gamma_lookup.items():
+        print(f"gamma={gamma} and gamma_lookup={expected_size}")
+        assert sum(linker_output["gamma_postcode"] == gamma) == expected_size
+
+    # Check individual IDs are assigned to the correct gamma values
+    # Dict key: {gamma_level: tuple of ID pairs}
+    size_gamma_lookup = {
+        4: [(1, 2)],
+        3: [(1, 3), (2, 3)],
+        2: [(3, 4), (2, 4), (1, 4)],
+        1: [(4, 5), (3, 5), (2, 5), (1, 5)],
+        0: [(5, 6), (4, 6), (3, 6), (2, 6), (1, 6)],
+    }
+
+    for gamma, id_pairs in size_gamma_lookup.items():
+        for left, right in id_pairs:
+            print(f"Checking IDs: {left}, {right}")
+            assert (
+                linker_output.loc[
+                    (linker_output.unique_id_l == left)
+                    & (linker_output.unique_id_r == right)
+                ]["gamma_postcode"].values[0]
+                == gamma
+            )
