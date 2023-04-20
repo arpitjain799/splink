@@ -556,8 +556,9 @@ class PostcodeComparisonBase(Comparison):
             comparison_levels.append(comparison_level)
 
         if include_sector_match_level:
+            sector = r"'^[A-Z]{1,2}\d[A-Z\d]?\s\d'"
             comparison_level = {
-                "sql_condition": f"regexp_extract({postcode_col_l}, '^[A-Z]{1,2}\d[A-Z\d]?\s\d') = regexp_extract({postcode_col_r}, '^[A-Z]{1,2}\d[A-Z\d]?\s\d')",
+                "sql_condition": f"regexp_extract({postcode_col_l}, {sector}) == regexp_extract({postcode_col_r}, {sector})",
                 # "tf_adjustment_column": term_frequency_adjustments_sector,
                 # "tf_adjustment_weight": 1.0,
                 "m_probability": m_probability_sector_match,
@@ -566,8 +567,9 @@ class PostcodeComparisonBase(Comparison):
             comparison_levels.append(comparison_level)
 
         if include_district_match_level:
+            district = r"'^[A-Z]{1,2}\d[A-Z\d]?'"
             comparison_level = {
-                "sql_condition": f"regexp_extract({postcode_col_l}, '^[A-Z]{1,2}\d[A-Z\d]?') = regexp_extract({postcode_col_r}, '^[A-Z]{1,2}\d[A-Z\d]?')",
+                "sql_condition": f"regexp_extract({postcode_col_l}, {district}) == regexp_extract({postcode_col_r}, {district})",
                 # "tf_adjustment_column": term_frequency_adjustments_sector,
                 # "tf_adjustment_weight": 1.0,
                 "m_probability": m_probability_district_match,
@@ -576,8 +578,9 @@ class PostcodeComparisonBase(Comparison):
             comparison_levels.append(comparison_level)
 
         if include_area_match_level:
+            area = r"'^[A-Z]{1,2}'"
             comparison_level = {
-                "sql_condition": f"regexp_extract({postcode_col_l}, '^[A-Z]{1,2}') = regexp_extract({postcode_col_r}, '^[A-Z]{1,2}')",
+                "sql_condition": f"regexp_extract({postcode_col_l}, {area}) == regexp_extract({postcode_col_r}, {area})",
                 # "tf_adjustment_column": term_frequency_adjustments_sector,
                 # "tf_adjustment_weight": 1.0,
                 "m_probability": m_probability_area_match,
