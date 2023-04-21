@@ -181,8 +181,8 @@ def test_name_comparison_run(ctl):
 @pytest.mark.parametrize(
     ("ctl", "Linker"),
     [
-        pytest.param(ctld, DuckDBLinker, id="DuckDB Date Comparison Integration Tests"),
-        pytest.param(ctls, SparkLinker, id="Spark Date Comparison Integration Tests"),
+        pytest.param(ctld, DuckDBLinker, id="DuckDB Name Comparison Integration Tests"),
+        pytest.param(ctls, SparkLinker, id="Spark Name Comparison Integration Tests"),
     ],
 )
 def test_name_comparison_levels(spark, ctl, Linker):
@@ -286,6 +286,13 @@ def test_name_comparison_levels(spark, ctl, Linker):
 # postcode_comparison
 
 
+@pytest.mark.parametrize(
+    ("ctl", "Linker"),
+    [
+        pytest.param(ctld, DuckDBLinker, id="DuckDB Postcode Comparison Tests"),
+        pytest.param(ctls, SparkLinker, id="Spark Postcode Comparison Tests"),
+    ],
+)
 def test_postcode_comparison_levels(spark, ctl, Linker):
     df = pd.DataFrame(
         [
