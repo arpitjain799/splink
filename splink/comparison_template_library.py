@@ -556,36 +556,33 @@ class PostcodeComparisonBase(Comparison):
             comparison_levels.append(comparison_level)
 
         if include_sector_match_level:
-            sector = r"'^[A-Z]{1,2}[0-9][A-Z0-9]? [0-9]'"
-            comparison_level = {
-                "sql_condition": f"regexp_extract({postcode_col_l}, {sector}, 0) == regexp_extract({postcode_col_r}, {sector}, 0)",
-                # "tf_adjustment_column": term_frequency_adjustments_sector,
-                # "tf_adjustment_weight": 1.0,
-                "m_probability": m_probability_sector_match,
-                "label_for_charts": "Sector match",
-            }
+            comparison_level = self._exact_match_level(
+                col_name,
+                regex_extract="^[A-Z]{1,2}[0-9][A-Z0-9]? [0-9]",
+                # term_frequency_adjustments=term_frequency_adjustments_sector,
+                m_probability=m_probability_sector_match,
+                include_colname_in_charts_label=True,
+            )
             comparison_levels.append(comparison_level)
 
         if include_district_match_level:
-            district = r"'^[A-Z]{1,2}[0-9][A-Z0-9]?'"
-            comparison_level = {
-                "sql_condition": f"regexp_extract({postcode_col_l}, {district}, 0) == regexp_extract({postcode_col_r}, {district}, 0)",
-                # "tf_adjustment_column": term_frequency_adjustments_sector,
-                # "tf_adjustment_weight": 1.0,
-                "m_probability": m_probability_district_match,
-                "label_for_charts": "District match",
-            }
+            comparison_level = self._exact_match_level(
+                col_name,
+                regex_extract="^[A-Z]{1,2}[0-9][A-Z0-9]?",
+                # term_frequency_adjustments=term_frequency_adjustments_district,
+                m_probability=m_probability_district_match,
+                include_colname_in_charts_label=True,
+            )
             comparison_levels.append(comparison_level)
 
         if include_area_match_level:
-            area = r"'^[A-Z]{1,2}'"
-            comparison_level = {
-                "sql_condition": f"regexp_extract({postcode_col_l}, {area}, 0) == regexp_extract({postcode_col_r}, {area}, 0)",
-                # "tf_adjustment_column": term_frequency_adjustments_sector,
-                # "tf_adjustment_weight": 1.0,
-                "m_probability": m_probability_area_match,
-                "label_for_charts": "Area match",
-            }
+            comparison_level = self._exact_match_level(
+                col_name,
+                regex_extract="^[A-Z]{1,2}",
+                # term_frequency_adjustments=term_frequency_adjustments_area,
+                m_probability=m_probability_area_match,
+                include_colname_in_charts_label=True,
+            )
             comparison_levels.append(comparison_level)
 
         comparison_levels.append(
